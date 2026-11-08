@@ -1,915 +1,531 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulasi Lalu Lintas Militer - Tactical Traffic System</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts: Share Tech Mono & Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        military: {
-                            dark: '#1a2416',
-                            green: '#3b4e32',
-                            lightgreen: '#5c784f',
-                            accent: '#8fae7a',
-                            yellow: '#d4af37',
-                            alert: '#d94336'
-                        }
-                    },
-                    fontFamily: {
-                        mono: ['"Share Tech Mono"', 'monospace'],
-                        sans: ['Inter', 'sans-serif']
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body {
-            background-color: #0f140e;
-            color: #d1d5db;
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
-            user-select: none;
-        }
-        .font-tech {
-            font-family: 'Share Tech Mono', monospace;
-        }
-        canvas {
-            box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
-            background-color: #2b2b2b;
-        }
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1a2416;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #5c784f;
-            border-radius: 3px;
-        }
-        .glow-red { box-shadow: 0 0 15px #ef4444; }
-        .glow-yellow { box-shadow: 0 0 15px #eab308; }
-        .glow-green { box-shadow: 0 0 15px #22c55e; }
-        .grid-bg {
-            background-size: 20px 20px;
-            background-image: 
-                linear-gradient(to right, rgba(59, 78, 50, 0.15) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(59, 78, 50, 0.15) 1px, transparent 1px);
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulasi PLC & HMI — Lampu Lalu Lintas 4 Arah</title>
+<style>
+:root{--bg:#1d232c;--panel:#2a323d;--ink:#e8edf2;--mut:#93a1b1;--g:#6fdc8c;--r:#ef6b66;--b:#4aa8ff;--y:#f5d54a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid #38424f}
+h1{font-size:18px;margin:0;font-weight:600}
+#conn{font-size:13px;color:var(--mut);display:flex;align-items:center;gap:8px}
+#conn i{width:10px;height:10px;border-radius:50%;background:#777;display:inline-block}
+#conn.on i{background:var(--g)}
+main{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(340px,1fr);gap:16px;padding:16px;max-width:1420px;margin:auto}
+@media(max-width:980px){main{grid-template-columns:1fr}}
+canvas{width:100%;height:auto;border-radius:10px;background:#cdd7c4;display:block}
+.panel{background:var(--panel);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.cols{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;font-size:11px;font-weight:600}
+.sig{margin:6px auto;width:40px;padding:6px;background:#1a202c;border-radius:6px;display:flex;flex-direction:column;gap:5px}
+.sig b{display:block;width:26px;height:26px;border-radius:50%;margin:auto;opacity:.2}
+.sig .r{background:#ff4b45}.sig .y{background:#ffc83a}.sig .g{background:#4ee07a}
+.sig b.on{opacity:1;box-shadow:0 0 10px currentColor}
+.sig .r.on{color:#ff4b45}.sig .y.on{color:#ffc83a}.sig .g.on{color:#4ee07a}
+#fase{text-align:center;margin:4px 0 8px;font-size:15px;font-weight:bold;color:var(--b)}
+.btns{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+button{border:0;border-radius:8px;padding:10px 4px;font:600 13px inherit;font-family:inherit;color:#14202b;cursor:pointer}
+button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+button:active{transform:translateY(1px)}
+#bS{background:var(--g)}#bT{background:var(--r)}#bA{background:var(--b)}#bD{background:var(--y)}
+button.act{box-shadow:0 0 0 3px #fff inset}
+#bN{grid-column:1/-1;background:#556273;color:#fff}
+#bN[disabled]{opacity:.4;cursor:not-allowed}
+
+.ctrl-box{background:#1a202c;padding:10px 12px;border-radius:8px;font-size:12px;display:flex;flex-direction:column;gap:8px}
+.ctrl-title{font-size:11px;font-weight:bold;color:var(--mut);text-transform:uppercase;letter-spacing:0.5px}
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.form-group{display:flex;flex-direction:column;gap:3px}
+.form-group label{font-size:11px;color:var(--ink)}
+.form-group input, .form-group select{background:#2a323d;border:1px solid #4a5563;color:#fff;padding:5px;border-radius:4px;font-size:12px;text-align:center}
+
+.io{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12px}
+.io h3{grid-column:1/-1;margin:2px 0 0;font-size:11px;color:var(--mut);font-weight:600}
+.io div{display:flex;align-items:center;gap:6px}
+.io i{width:9px;height:9px;border-radius:50%;background:#4a5563;flex:none}
+.io i.on{background:var(--g)}
+#itl{font-size:12px;color:var(--mut)}
+#itl.bad{color:var(--r);font-weight:700}
+.btn-action-danger{background:#ff4b45;color:#fff;padding:8px;border-radius:6px;font-weight:bold;cursor:pointer;border:none;}
+.btn-action-danger:hover{background:#d93833;}
+.btn-action-clear{background:#4a5568;color:#fff;padding:8px;border-radius:6px;font-weight:bold;cursor:pointer;border:none;}
+.btn-action-clear:hover{background:#3a4250;}
+@media(prefers-reduced-motion:reduce){button:active{transform:none}}
+</style>
 </head>
-<body class="grid-bg min-h-screen flex flex-col justify-between">
+<body>
+<header>
+  <h1>Simulasi PLC & HMI — Lampu Lalu Lintas 4 Arah</h1>
+  <div id="conn"><i></i><span>Mode lokal (emulator PLC 4 arah)</span></div>
+</header>
+<main>
+  <canvas id="cv" width="1000" height="640" aria-label="Animasi persimpangan"></canvas>
+  <section class="panel">
+    <!-- Indikator HMI 4 Lampu -->
+    <div class="cols">
+      <div>UTARA<div class="sig" id="sig-n"><b class="r"></b><b class="y"></b><b class="g"></b></div></div>
+      <div>TIMUR<div class="sig" id="sig-e"><b class="r"></b><b class="y"></b><b class="g"></b></div></div>
+      <div>SELATAN<div class="sig" id="sig-s"><b class="r"></b><b class="y"></b><b class="g"></b></div></div>
+      <div>BARAT<div class="sig" id="sig-w"><b class="r"></b><b class="y"></b><b class="g"></b></div></div>
+    </div>
+    
+    <div id="fase">—</div>
+    
+    <!-- Tombol Operasional -->
+    <div class="btns">
+      <button id="bS">START</button><button id="bT">STOP</button>
+      <button id="bA">AUTO</button><button id="bD">DARURAT</button>
+      <button id="bN">LANGKAH (mode manual)</button>
+    </div>
 
-    <!-- Header / Navbar -->
-    <header class="bg-military-dark border-b border-military-green/50 p-4 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-military-green rounded-lg text-military-yellow">
-                    <i class="fa-solid fa-shield-halved text-2xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl md:text-2xl font-bold font-tech text-white tracking-wider flex items-center gap-2">
-                        TACTICAL TRAFFIC COMMAND <span class="text-xs px-2 py-0.5 rounded bg-military-lightgreen text-black font-sans font-semibold">PLC HMI v5.0</span>
-                    </h1>
-                    <p class="text-xs text-military-accent font-tech">SISTEM KONTROL PERSIMPANGAN MILITER & HELIPAD ANIMASI</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-4 text-xs font-tech">
-                <div class="bg-black/50 border border-military-green px-3 py-1.5 rounded flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" id="status-indicator-dot"></span>
-                    <span>STATUS: <span id="sys-status" class="text-emerald-400">NORMAL (28s CYCLE)</span></span>
-                </div>
-                <div class="bg-black/50 border border-military-green px-3 py-1.5 rounded">
-                    <span>MODE: <span id="current-mode-display" class="text-military-yellow">AUTO</span></span>
-                </div>
-                <button id="sound-toggle" class="bg-military-green hover:bg-military-lightgreen text-white px-3 py-1.5 rounded font-sans transition flex items-center gap-2">
-                    <i class="fa-solid fa-volume-high" id="sound-icon"></i>
-                    <span id="sound-text">AUDIO ON</span>
-                </button>
-            </div>
+    <!-- Pengatur Durasi Lampu -->
+    <div class="ctrl-box">
+      <div class="ctrl-title">Pengatur Durasi Lampu (Detik)</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cfg-g">Hijau</label>
+          <input type="number" id="cfg-g" value="20" min="2" max="60" onchange="updatePLCConfig()">
         </div>
-    </header>
-
-    <!-- Main Content Area -->
-    <main class="max-w-7xl mx-auto w-full p-4 grid grid-cols-1 lg:grid-cols-12 gap-6 my-auto">
-        
-        <!-- Left Panel: Canvas Simulation (8 Cols) -->
-        <div class="lg:col-span-8 flex flex-col items-center justify-center">
-            <div class="relative w-full max-w-[650px] aspect-square rounded-xl overflow-hidden border-2 border-military-green/60 shadow-2xl bg-slate-900">
-                <!-- Canvas Element -->
-                <canvas id="trafficCanvas" width="650" height="650" class="w-full h-full block"></canvas>
-
-                <!-- Overlay Emergency & Stop Banners -->
-                <div id="emergency-banner" class="hidden absolute top-4 left-1/2 -translate-x-1/2 bg-yellow-500/90 text-black font-tech text-sm md:text-base px-6 py-2 rounded-full border border-yellow-200 animate-bounce flex items-center gap-2 z-20 font-bold shadow-lg">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    MODE DARURAT: KUNING BERKEDIP
-                </div>
-
-                <div id="stop-banner" class="hidden absolute top-4 left-1/2 -translate-x-1/2 bg-red-700/90 text-white font-tech text-sm md:text-base px-6 py-2 rounded-full border border-red-300 animate-pulse flex items-center gap-2 z-20 font-bold shadow-lg">
-                    <i class="fa-solid fa-circle-stop"></i>
-                    MODE STOP: SEMUA LAMPU MERAH
-                </div>
-            </div>
-
-            <!-- Realtime Counters Below Canvas -->
-            <div class="w-full max-w-[650px] mt-4 grid grid-cols-4 gap-2 font-tech text-center">
-                <div class="bg-military-dark/80 border border-military-green/50 p-2 rounded-lg">
-                    <span class="text-gray-400 text-[10px] block">TOTAL KENDARAAN</span>
-                    <span id="stat-passed" class="text-lg font-bold text-military-accent">0</span>
-                </div>
-                <div class="bg-military-dark/80 border border-military-green/50 p-2 rounded-lg">
-                    <span class="text-gray-400 text-[10px] block">KENDARAAN AKTIF</span>
-                    <span id="stat-active" class="text-lg font-bold text-military-yellow">0</span>
-                </div>
-                <div class="bg-military-dark/80 border border-military-green/50 p-2 rounded-lg">
-                    <span class="text-gray-400 text-[10px] block">SIKLUS HMI (28s)</span>
-                    <span id="stat-cycle-time" class="text-lg font-bold text-cyan-400">0.0s</span>
-                </div>
-                <div class="bg-military-dark/80 border border-military-green/50 p-2 rounded-lg">
-                    <span class="text-gray-400 text-[10px] block">PROTEKSI INTERLOCK</span>
-                    <span id="stat-interlock" class="text-lg font-bold text-emerald-400">AKTIF</span>
-                </div>
-            </div>
+        <div class="form-group">
+          <label for="cfg-y">Kuning</label>
+          <input type="number" id="cfg-y" value="3" min="1" max="10" onchange="updatePLCConfig()">
         </div>
-
-        <!-- Right Panel: Control Dashboard (4 Cols) -->
-        <div class="lg:col-span-4 space-y-4">
-            
-            <!-- Traffic Signal State Box -->
-            <div class="bg-military-dark border border-military-green/60 p-4 rounded-xl shadow-lg">
-                <h2 class="text-sm font-tech text-military-accent mb-3 uppercase tracking-wider flex items-center justify-between">
-                    <span><i class="fa-solid fa-traffic-light mr-2"></i> Signal HMI Interlock (4 Arah)</span>
-                    <span id="active-direction" class="text-xs bg-black/40 text-yellow-400 px-2 py-0.5 rounded">UTARA (HIJAU)</span>
-                </h2>
-
-                <div class="grid grid-cols-4 gap-2 text-center">
-                    <!-- North -->
-                    <div class="bg-black/40 p-2 rounded border border-white/5">
-                        <span class="text-[10px] font-tech text-gray-400 block mb-1">UTARA</span>
-                        <div id="light-n-state" class="w-4 h-4 mx-auto rounded-full bg-red-950 border border-red-900 mb-1"></div>
-                        <span id="timer-n" class="font-tech text-xs text-white">--</span>
-                    </div>
-                    <!-- East -->
-                    <div class="bg-black/40 p-2 rounded border border-white/5">
-                        <span class="text-[10px] font-tech text-gray-400 block mb-1">TIMUR</span>
-                        <div id="light-e-state" class="w-4 h-4 mx-auto rounded-full bg-red-950 border border-red-900 mb-1"></div>
-                        <span id="timer-e" class="font-tech text-xs text-white">--</span>
-                    </div>
-                    <!-- South -->
-                    <div class="bg-black/40 p-2 rounded border border-white/5">
-                        <span class="text-[10px] font-tech text-gray-400 block mb-1">SELATAN</span>
-                        <div id="light-s-state" class="w-4 h-4 mx-auto rounded-full bg-red-950 border border-red-900 mb-1"></div>
-                        <span id="timer-s" class="font-tech text-xs text-white">--</span>
-                    </div>
-                    <!-- West -->
-                    <div class="bg-black/40 p-2 rounded border border-white/5">
-                        <span class="text-[10px] font-tech text-gray-400 block mb-1">BARAT</span>
-                        <div id="light-w-state" class="w-4 h-4 mx-auto rounded-full bg-red-950 border border-red-900 mb-1"></div>
-                        <span id="timer-w" class="font-tech text-xs text-white">--</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Command & Control Panel (Skenario Pengujian PLC/HMI) -->
-            <div class="bg-military-dark border border-military-green/60 p-4 rounded-xl shadow-lg space-y-3">
-                <h2 class="text-sm font-tech text-military-accent uppercase tracking-wider">
-                    <i class="fa-solid fa-flask-vial mr-2"></i> Skenario Pengujian PLC & HMI
-                </h2>
-
-                <!-- Main Test Action Buttons -->
-                <div class="grid grid-cols-3 gap-2">
-                    <button id="btn-scenario-normal" class="bg-emerald-700 hover:bg-emerald-600 text-white py-2 px-2 rounded font-tech text-xs font-bold transition flex flex-col items-center justify-center gap-1 border border-emerald-400 shadow">
-                        <i class="fa-solid fa-play text-sm"></i>
-                        <span>START (AUTO)</span>
-                    </button>
-                    <button id="btn-scenario-stop" class="bg-slate-700 hover:bg-slate-600 text-white py-2 px-2 rounded font-tech text-xs font-bold transition flex flex-col items-center justify-center gap-1 border border-slate-400 shadow">
-                        <i class="fa-solid fa-hand text-sm text-red-400"></i>
-                        <span>STOP (ALL RED)</span>
-                    </button>
-                    <button id="btn-scenario-emergency" class="bg-amber-600 hover:bg-amber-500 text-black py-2 px-2 rounded font-tech text-xs font-bold transition flex flex-col items-center justify-center gap-1 border border-amber-300 shadow">
-                        <i class="fa-solid fa-triangle-exclamation text-sm"></i>
-                        <span>DARURAT</span>
-                    </button>
-                </div>
-
-                <!-- Helipad / Base Interactive Controls -->
-                <div class="pt-2 border-t border-military-green/30 space-y-2">
-                    <span class="text-xs font-tech text-gray-400 block">KONTROL ARMADA AIRBASE:</span>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button id="btn-takeoff-heli" class="bg-slate-800 hover:bg-military-green border border-military-accent/50 text-military-accent py-2 px-2 rounded font-tech text-xs font-semibold transition flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-helicopter text-sm text-amber-400"></i>
-                            <span id="heli-btn-text">TERBANGKAN HELI</span>
-                        </button>
-                        <button id="btn-toggle-searchlight" class="bg-slate-800 hover:bg-military-green border border-military-yellow/50 text-military-yellow py-2 px-2 rounded font-tech text-xs font-semibold transition flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-tower-observation text-sm"></i>
-                            <span id="searchlight-text">MENARA: ON</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Manual Spawn Unit -->
-                <div class="pt-2 border-t border-military-green/30">
-                    <span class="text-xs font-tech text-gray-400 block mb-2">KERAHKAN UNIT MILITER MANUAL:</span>
-                    <div class="grid grid-cols-4 gap-2">
-                        <button id="spawn-tank" class="bg-slate-800 hover:bg-military-green border border-military-green/50 text-white text-[10px] py-1.5 rounded flex flex-col items-center gap-1 transition">
-                            <i class="fa-solid fa-shield-cat text-military-yellow"></i>
-                            <span class="font-tech">TANK</span>
-                        </button>
-                        <button id="spawn-nuke" class="bg-slate-800 hover:bg-military-green border border-military-green/50 text-white text-[10px] py-1.5 rounded flex flex-col items-center gap-1 transition">
-                            <i class="fa-solid fa-radiation text-red-400"></i>
-                            <span class="font-tech">RUDAL</span>
-                        </button>
-                        <button id="spawn-truck" class="bg-slate-800 hover:bg-military-green border border-military-green/50 text-white text-[10px] py-1.5 rounded flex flex-col items-center gap-1 transition">
-                            <i class="fa-solid fa-truck-field text-military-accent"></i>
-                            <span class="font-tech">TRUK</span>
-                        </button>
-                        <button id="spawn-humvee" class="bg-slate-800 hover:bg-military-green border border-military-green/50 text-white text-[10px] py-1.5 rounded flex flex-col items-center gap-1 transition">
-                            <i class="fa-solid fa-car-side text-emerald-400"></i>
-                            <span class="font-tech">HUMVEE</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="pt-2 border-t border-military-green/30">
-                    <button id="btn-toggle-pause" class="w-full bg-slate-800 hover:bg-slate-700 text-white py-1.5 px-3 rounded font-tech text-xs font-semibold transition flex items-center justify-center gap-2 border border-military-green/50">
-                        <i class="fa-solid fa-pause" id="pause-icon"></i>
-                        <span id="pause-text">PAUSE SIMULASI</span>
-                    </button>
-                </div>
-
-            </div>
-
+        <div class="form-group">
+          <label for="cfg-ar">All Red Transisi</label>
+          <input type="number" id="cfg-ar" value="1" min="0" max="10" onchange="updatePLCConfig()">
         </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-military-dark border-t border-military-green/40 py-2 px-4 text-center text-xs font-tech text-gray-500">
-        SIMULASI PLC & HMI HTML - SKENARIO PENGUJIEN LAMPU LALU LINTAS 28S INTERLOCK
-    </footer>
-
-    <!-- Script Utama Simulasi -->
-    <script>
-        class SoundEngine {
-            constructor() {
-                this.ctx = null;
-                this.enabled = true;
-            }
-            init() {
-                if (!this.ctx) {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    this.ctx = new AudioContext();
-                }
-            }
-            playBeep(freq = 440, duration = 0.1) {
-                if (!this.enabled || !this.ctx) return;
-                try {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-                    gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start();
-                    osc.stop(this.ctx.currentTime + duration);
-                } catch(e) {}
-            }
-            playSiren() {
-                if (!this.enabled || !this.ctx) return;
-                try {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = 'sawtooth';
-                    const now = this.ctx.currentTime;
-                    osc.frequency.setValueAtTime(450, now);
-                    osc.frequency.linearRampToValueAtTime(750, now + 0.25);
-                    osc.frequency.linearRampToValueAtTime(450, now + 0.5);
-                    gain.gain.setValueAtTime(0.05, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start();
-                    osc.stop(now + 0.5);
-                } catch(e) {}
-            }
-        }
-
-        const sound = new SoundEngine();
-
-        const canvas = document.getElementById('trafficCanvas');
-        const ctx = canvas.getContext('2d');
-        const CANVAS_SIZE = 650;
-        const ROAD_WIDTH = 140;
-        const LANE_WIDTH = ROAD_WIDTH / 2;
-        const CENTER = CANVAS_SIZE / 2;
-
-        const STOP_LINES = {
-            N: CENTER - ROAD_WIDTH / 2,
-            S: CENTER + ROAD_WIDTH / 2,
-            W: CENTER - ROAD_WIDTH / 2,
-            E: CENTER + ROAD_WIDTH / 2
-        };
-
-        // State Skenario Pengujian (NORMAL, STOP, DARURAT)
-        let activeScenario = 'NORMAL'; 
-        let isPaused = false;
-        let isSearchlightOn = true;
-        let searchlightAngle = 0;
-
-        let safeDistanceGap = 45;
-        let trafficSpawnRate = 2;
-
-        let passedVehiclesCount = 0;
-        let totalTimeSeconds = 0;
-
-        // Siklus 28 Detik (4 Arah x 7 detik)
-        const directionsList = ['N', 'E', 'S', 'W'];
-        let currentDirIndex = 0;
-        let activeDirection = directionsList[currentDirIndex];
-        let currentPhase = 'GREEN';
-        let phaseTimer = 6;
-        let totalCycleTimer = 0;
-
-        // Helicopter State & Animation Physics
-        let heliState = 'LANDED'; // 'LANDED', 'TAKING_OFF', 'FLYING', 'LANDING'
-        let heliPos = { x: 100, y: 100, alt: 0, rot: -Math.PI / 4, rotorAngle: 0, flightAngle: 0 };
-
-        let vehicles = [];
-
-        const VEHICLE_TYPES = {
-            TANK: { width: 32, length: 52, maxSpeed: 2.0, accel: 0.04, color: '#4d5d36', accent: '#2d381e' },
-            NUKE: { width: 30, length: 75, maxSpeed: 1.5, accel: 0.03, color: '#314233', accent: '#a13333' },
-            TRUCK: { width: 28, length: 58, maxSpeed: 2.4, accel: 0.05, color: '#3f4e34', accent: '#637a52' },
-            HUMVEE: { width: 24, length: 40, maxSpeed: 3.2, accel: 0.08, color: '#737a52', accent: '#a1a87c' }
-        };
-
-        class Vehicle {
-            constructor(dir, typeKey = null) {
-                this.id = Math.random().toString(36).substr(2, 9);
-                this.dir = dir;
-                
-                if (!typeKey) {
-                    const keys = Object.keys(VEHICLE_TYPES);
-                    typeKey = keys[Math.floor(Math.random() * keys.length)];
-                }
-                this.typeKey = typeKey;
-                const spec = VEHICLE_TYPES[typeKey];
-                this.width = spec.width;
-                this.length = spec.length;
-                this.maxSpeed = spec.maxSpeed;
-                this.accel = spec.accel;
-                this.color = spec.color;
-                this.accent = spec.accent;
-                this.speed = 0;
-
-                const offset = LANE_WIDTH / 2;
-                if (this.dir === 'N') { this.x = CENTER - offset; this.y = -this.length - Math.random() * 50; }
-                else if (this.dir === 'S') { this.x = CENTER + offset; this.y = CANVAS_SIZE + this.length + Math.random() * 50; }
-                else if (this.dir === 'W') { this.x = -this.length - Math.random() * 50; this.y = CENTER + offset; }
-                else if (this.dir === 'E') { this.x = CANVAS_SIZE + this.length + Math.random() * 50; this.y = CENTER - offset; }
-
-                this.turnIntent = Math.random() < 0.6 ? 'STRAIGHT' : (Math.random() < 0.5 ? 'LEFT' : 'RIGHT');
-                this.currentAngle = this.getInitialAngle();
-                this.hasPassedIntersection = false;
-                this.hasCompletedTurn = false;
-            }
-
-            getInitialAngle() {
-                if (this.dir === 'N') return Math.PI / 2;
-                if (this.dir === 'S') return -Math.PI / 2;
-                if (this.dir === 'W') return 0;
-                if (this.dir === 'E') return Math.PI;
-                return 0;
-            }
-
-            draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.currentAngle);
-
-                const w = this.length;
-                const h = this.width;
-
-                // 3D Shadow
-                ctx.fillStyle = 'rgba(0,0,0,0.4)';
-                ctx.fillRect(-w/2 + 3, -h/2 + 3, w, h);
-
-                if (this.typeKey === 'NUKE') {
-                    ctx.fillStyle = this.color;
-                    ctx.fillRect(-w/2, -h/2, w, h);
-                    ctx.fillStyle = '#dc2626';
-                    ctx.fillRect(w/4, -h/3, w/3, h*0.66);
-                    ctx.fillStyle = '#d69e2e';
-                    ctx.fillRect(-w/4, -h/3, 8, h*0.66);
-                } else if (this.typeKey === 'TANK') {
-                    ctx.fillStyle = this.color;
-                    ctx.fillRect(-w/2, -h/2, w, h);
-                    ctx.fillStyle = '#1a1a1a';
-                    ctx.fillRect(-w/2, -h/2 - 2, w, 4);
-                    ctx.fillRect(-w/2, h/2 - 2, w, 4);
-                    ctx.fillStyle = this.accent;
-                    ctx.beginPath(); ctx.arc(0, 0, h/3, 0, Math.PI * 2); ctx.fill();
-                    ctx.fillStyle = '#111'; ctx.fillRect(0, -2.5, w/1.6, 5);
-                } else {
-                    ctx.fillStyle = this.color;
-                    ctx.fillRect(-w/2, -h/2, w, h);
-                }
-
-                // Headlights
-                ctx.fillStyle = '#fef08a';
-                ctx.fillRect(w/2 - 1, -h/2 + 3, 2, 4);
-                ctx.fillRect(w/2 - 1, h/2 - 7, 2, 4);
-
-                ctx.restore();
-            }
-
-            update() {
-                const ahead = this.getVehicleAhead();
-                let targetSpeed = this.maxSpeed;
-                const shouldStop = this.checkSignal();
-
-                let inIntersectionBox = (this.x > CENTER - ROAD_WIDTH/2 && this.x < CENTER + ROAD_WIDTH/2 && this.y > CENTER - ROAD_WIDTH/2 && this.y < CENTER + ROAD_WIDTH/2);
-
-                if (shouldStop) {
-                    targetSpeed = 0;
-                } else if (ahead) {
-                    const minAllowedGap = safeDistanceGap + (this.length / 2) + (ahead.vehicle.length / 2);
-                    if (ahead.distance < minAllowedGap + 35) {
-                        targetSpeed = Math.min(this.maxSpeed, ahead.vehicle.speed * 0.8);
-                        if (ahead.distance <= minAllowedGap) {
-                            targetSpeed = 0;
-                        }
-                    }
-                }
-
-                if (inIntersectionBox && !this.hasCompletedTurn && this.turnIntent !== 'STRAIGHT') {
-                    let targetTurnAngle = this.getInitialAngle();
-                    if (this.turnIntent === 'LEFT') {
-                        if (this.dir === 'N') targetTurnAngle = 0;
-                        else if (this.dir === 'S') targetTurnAngle = Math.PI;
-                        else if (this.dir === 'E') targetTurnAngle = Math.PI / 2;
-                        else if (this.dir === 'W') targetTurnAngle = -Math.PI / 2;
-                    } else if (this.turnIntent === 'RIGHT') {
-                        if (this.dir === 'N') targetTurnAngle = Math.PI;
-                        else if (this.dir === 'S') targetTurnAngle = 0;
-                        else if (this.dir === 'E') targetTurnAngle = -Math.PI / 2;
-                        else if (this.dir === 'W') targetTurnAngle = Math.PI / 2;
-                    }
-                    this.currentAngle += (targetTurnAngle - this.currentAngle) * 0.1;
-                }
-
-                if (this.speed < targetSpeed) {
-                    this.speed = Math.min(this.speed + this.accel, targetSpeed);
-                } else if (this.speed > targetSpeed) {
-                    this.speed = Math.max(this.speed - this.accel * 2.5, 0);
-                }
-
-                this.x += Math.cos(this.currentAngle) * this.speed;
-                this.y += Math.sin(this.currentAngle) * this.speed;
-
-                if (!this.hasPassedIntersection) {
-                    if ((this.dir === 'N' && this.y > STOP_LINES.S) ||
-                        (this.dir === 'S' && this.y < STOP_LINES.N) ||
-                        (this.dir === 'W' && this.x > STOP_LINES.E) ||
-                        (this.dir === 'E' && this.x < STOP_LINES.W)) {
-                        this.hasPassedIntersection = true;
-                        passedVehiclesCount++;
-                    }
-                }
-            }
-
-            checkSignal() {
-                if (activeScenario === 'STOP') return true;
-                if (activeScenario === 'DARURAT') return false;
-
-                if (this.hasPassedIntersection) return false;
-
-                let isGreenForMe = (activeDirection === this.dir && currentPhase === 'GREEN');
-                let stopPos = 0;
-                let currentPos = 0;
-
-                if (this.dir === 'N') {
-                    stopPos = STOP_LINES.N - 25;
-                    currentPos = this.y + this.length / 2;
-                    return !isGreenForMe && currentPos <= stopPos && currentPos >= stopPos - 55;
-                }
-                if (this.dir === 'S') {
-                    stopPos = STOP_LINES.S + 25;
-                    currentPos = this.y - this.length / 2;
-                    return !isGreenForMe && currentPos >= stopPos && currentPos <= stopPos + 55;
-                }
-                if (this.dir === 'W') {
-                    stopPos = STOP_LINES.W - 25;
-                    currentPos = this.x + this.length / 2;
-                    return !isGreenForMe && currentPos <= stopPos && currentPos >= stopPos - 55;
-                }
-                if (this.dir === 'E') {
-                    stopPos = STOP_LINES.E + 25;
-                    currentPos = this.x - this.length / 2;
-                    return !isGreenForMe && currentPos >= stopPos && currentPos <= stopPos + 55;
-                }
-                return false;
-            }
-
-            getVehicleAhead() {
-                let minDist = Infinity;
-                let closest = null;
-                for (let other of vehicles) {
-                    if (other.id === this.id || other.dir !== this.dir) continue;
-                    let dist = Infinity;
-                    if (this.dir === 'N' && other.y > this.y) dist = other.y - this.y;
-                    if (this.dir === 'S' && other.y < this.y) dist = this.y - other.y;
-                    if (this.dir === 'W' && other.x > this.x) dist = other.x - this.x;
-                    if (this.dir === 'E' && other.x < this.x) dist = this.x - other.x;
-
-                    if (dist > 0 && dist < minDist) {
-                        minDist = dist;
-                        closest = other;
-                    }
-                }
-                return closest ? { vehicle: closest, distance: minDist } : null;
-            }
-
-            isOutOfBounds() {
-                return (this.x < -150 || this.x > CANVAS_SIZE + 150 || this.y < -150 || this.y > CANVAS_SIZE + 150);
-            }
-        }
-
-        function drawMilitaryBaseEnvironment() {
-            const cornerSize = CENTER - ROAD_WIDTH/2 - 8;
-
-            // TOP-LEFT: Helipad Ground
-            ctx.fillStyle = '#1c2817'; ctx.fillRect(0, 0, cornerSize, cornerSize);
-            ctx.fillStyle = '#334155';
-            ctx.beginPath(); ctx.arc(100, 100, 55, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 4; ctx.stroke();
-
-            // Helipad Marker 'H'
-            ctx.fillStyle = '#f59e0b';
-            ctx.font = 'bold 36px "Share Tech Mono"';
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText('H', 100, 100);
-
-            // TOP-RIGHT: Hangar
-            ctx.fillStyle = '#22301c'; ctx.fillRect(CENTER + ROAD_WIDTH/2 + 8, 0, cornerSize, cornerSize);
-            drawBuilding3D(CENTER + ROAD_WIDTH/2 + 35, 30, 160, 100, '#475569', '#1e293b', 'HANGAR TAKTIS');
-
-            // BOTTOM-LEFT: Checkpoint
-            ctx.fillStyle = '#1a2416'; ctx.fillRect(0, CENTER + ROAD_WIDTH/2 + 8, cornerSize, cornerSize);
-            drawBuilding3D(CENTER - ROAD_WIDTH/2 - 100, CENTER + ROAD_WIDTH/2 + 35, 65, 55, '#334155', '#1e293b', 'CHECKPOINT');
-
-            // BOTTOM-RIGHT: Defense Zone
-            ctx.fillStyle = '#23331e'; ctx.fillRect(CENTER + ROAD_WIDTH/2 + 8, CENTER + ROAD_WIDTH/2 + 8, cornerSize, cornerSize);
-        }
-
-        function drawBuilding3D(x, y, w, h, topColor, sideColor, label) {
-            const depth = 10;
-            ctx.fillStyle = 'rgba(0,0,0,0.4)';
-            ctx.fillRect(x + depth, y + depth, w, h);
-
-            ctx.fillStyle = sideColor;
-            ctx.beginPath();
-            ctx.moveTo(x, y + h); ctx.lineTo(x + depth, y + h + depth);
-            ctx.lineTo(x + w + depth, y + h + depth); ctx.lineTo(x + w + depth, y + depth);
-            ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + h);
-            ctx.closePath(); ctx.fill();
-
-            ctx.fillStyle = topColor;
-            ctx.fillRect(x, y, w, h);
-            ctx.strokeStyle = '#8fae7a'; ctx.lineWidth = 1.5;
-            ctx.strokeRect(x, y, w, h);
-
-            ctx.fillStyle = '#8fae7a'; ctx.font = 'bold 9px monospace';
-            ctx.textAlign = 'center'; ctx.fillText(label, x + w/2, y + h/2 + 3);
-        }
-
-        // Animated Helicopter System
-        function updateAndDrawHelicopter() {
-            if (!isPaused) {
-                // Selalu putar baling-baling
-                heliPos.rotorAngle += (heliState === 'LANDED') ? 0.2 : 0.6;
-
-                if (heliState === 'TAKING_OFF') {
-                    heliPos.alt += 0.5;
-                    if (heliPos.alt >= 50) heliState = 'FLYING';
-                } else if (heliState === 'FLYING') {
-                    heliPos.flightAngle += 0.015;
-                    heliPos.x = 100 + Math.cos(heliPos.flightAngle) * 140;
-                    heliPos.y = 100 + Math.sin(heliPos.flightAngle) * 140;
-                    heliPos.rot = heliPos.flightAngle + Math.PI / 2;
-                } else if (heliState === 'LANDING') {
-                    const dx = 100 - heliPos.x;
-                    const dy = 100 - heliPos.y;
-                    heliPos.x += dx * 0.03;
-                    heliPos.y += dy * 0.03;
-                    heliPos.alt -= 0.4;
-                    if (heliPos.alt <= 0) {
-                        heliPos.alt = 0;
-                        heliPos.x = 100; heliPos.y = 100;
-                        heliPos.rot = -Math.PI / 4;
-                        heliState = 'LANDED';
-                        document.getElementById('heli-btn-text').innerText = 'TERBANGKAN HELI';
-                    }
-                }
-            }
-
-            ctx.save();
-            ctx.translate(heliPos.x, heliPos.y);
-
-            // Helicopter Shadow Projecting Downwards
-            const shadowOff = 4 + heliPos.alt * 0.8;
-            ctx.fillStyle = `rgba(0,0,0,${Math.max(0.08, 0.4 - heliPos.alt * 0.006)})`;
-            ctx.beginPath();
-            ctx.ellipse(shadowOff, shadowOff, 15 + heliPos.alt * 0.2, 22 + heliPos.alt * 0.2, heliPos.rot, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Helicopter Scale with Altitude
-            const scaleFactor = 1 + heliPos.alt * 0.006;
-            ctx.scale(scaleFactor, scaleFactor);
-            ctx.rotate(heliPos.rot);
-
-            // Fuselage Body
-            ctx.fillStyle = '#3b4e32';
-            ctx.fillRect(-8, -25, 16, 50);
-            ctx.fillRect(-3, -45, 6, 25);
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(-10, -10, 2, 30);
-            ctx.fillRect(8, -10, 2, 30);
-
-            // Cockpit Window Glass
-            ctx.fillStyle = '#38bdf8';
-            ctx.beginPath(); ctx.arc(0, 15, 6, 0, Math.PI * 2); ctx.fill();
-
-            // Main Rotor Blades (Rotating Animation)
-            ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.moveTo(-50 * Math.cos(heliPos.rotorAngle), -50 * Math.sin(heliPos.rotorAngle));
-            ctx.lineTo(50 * Math.cos(heliPos.rotorAngle), 50 * Math.sin(heliPos.rotorAngle));
-            ctx.moveTo(-50 * Math.cos(heliPos.rotorAngle + Math.PI/2), -50 * Math.sin(heliPos.rotorAngle + Math.PI/2));
-            ctx.lineTo(50 * Math.cos(heliPos.rotorAngle + Math.PI/2), 50 * Math.sin(heliPos.rotorAngle + Math.PI/2));
-            ctx.stroke();
-
-            // Tail Rotor
-            ctx.strokeStyle = 'rgba(245, 158, 11, 0.9)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(-8 * Math.cos(heliPos.rotorAngle * 2), -45);
-            ctx.lineTo(8 * Math.cos(heliPos.rotorAngle * 2), -45);
-            ctx.stroke();
-
-            ctx.restore();
-        }
-
-        function drawIntersection() {
-            ctx.fillStyle = '#222831';
-            ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-
-            drawMilitaryBaseEnvironment();
-
-            // Sidewalk Curbs
-            ctx.fillStyle = '#475569';
-            ctx.fillRect(CENTER - ROAD_WIDTH/2 - 8, 0, 8, CANVAS_SIZE);
-            ctx.fillRect(CENTER + ROAD_WIDTH/2, 0, 8, CANVAS_SIZE);
-            ctx.fillRect(0, CENTER - ROAD_WIDTH/2 - 8, CANVAS_SIZE, 8);
-            ctx.fillRect(0, CENTER + ROAD_WIDTH/2, CANVAS_SIZE, 8);
-
-            // Roads
-            ctx.fillStyle = '#334155';
-            ctx.fillRect(CENTER - ROAD_WIDTH/2, 0, ROAD_WIDTH, CANVAS_SIZE);
-            ctx.fillRect(0, CENTER - ROAD_WIDTH/2, CANVAS_SIZE, ROAD_WIDTH);
-
-            // Stop Lines
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(CENTER - ROAD_WIDTH/2, STOP_LINES.N - 2, ROAD_WIDTH/2 - 2, 4);
-            ctx.fillRect(CENTER + 2, STOP_LINES.S - 2, ROAD_WIDTH/2 - 2, 4);
-            ctx.fillRect(STOP_LINES.W - 2, CENTER + 2, 4, ROAD_WIDTH/2 - 2);
-            ctx.fillRect(STOP_LINES.E - 2, CENTER - ROAD_WIDTH/2, 4, ROAD_WIDTH/2 - 2);
-
-            // Watchtower Rotating Searchlight Animation
-            if (isSearchlightOn && !isPaused) searchlightAngle += 0.02;
-            if (isSearchlightOn) {
-                ctx.save();
-                ctx.translate(CANVAS_SIZE - 75, CANVAS_SIZE - 75);
-                ctx.rotate(searchlightAngle);
-                const grad = ctx.createRadialGradient(0, 0, 10, 0, 0, 240);
-                grad.addColorStop(0, 'rgba(254, 240, 138, 0.5)');
-                grad.addColorStop(1, 'rgba(253, 224, 71, 0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, 240, -Math.PI/6, Math.PI/6); ctx.closePath(); ctx.fill();
-                ctx.restore();
-            }
-
-            updateAndDrawHelicopter();
-
-            // Physical Traffic Light Indicators
-            const lightCoords = {
-                N: { x: CENTER - ROAD_WIDTH/2 - 25, y: CENTER - ROAD_WIDTH/2 - 25 },
-                E: { x: CENTER + ROAD_WIDTH/2 + 5, y: CENTER - ROAD_WIDTH/2 - 25 },
-                S: { x: CENTER + ROAD_WIDTH/2 + 5, y: CENTER + ROAD_WIDTH/2 + 5 },
-                W: { x: CENTER - ROAD_WIDTH/2 - 25, y: CENTER + ROAD_WIDTH/2 + 5 }
-            };
-
-            const isBlinkYellowOn = (Math.floor(Date.now() / 300) % 2 === 0);
-
-            ['N', 'E', 'S', 'W'].forEach(d => {
-                const pos = lightCoords[d];
-                ctx.fillStyle = '#0f172a'; ctx.fillRect(pos.x, pos.y, 20, 20);
-                let color = '#ef4444';
-
-                if (activeScenario === 'NORMAL') {
-                    if (activeDirection === d && currentPhase === 'GREEN') color = '#22c55e';
-                    if (activeDirection === d && currentPhase === 'YELLOW') color = '#eab308';
-                } else if (activeScenario === 'STOP') {
-                    color = '#ef4444';
-                } else if (activeScenario === 'DARURAT') {
-                    color = isBlinkYellowOn ? '#eab308' : '#422006';
-                }
-
-                ctx.fillStyle = color;
-                ctx.shadowColor = color; ctx.shadowBlur = 10;
-                ctx.beginPath(); ctx.arc(pos.x + 10, pos.y + 10, 6, 0, Math.PI * 2); ctx.fill();
-                ctx.shadowBlur = 0;
-            });
-        }
-
-        function updateTrafficLights(dt) {
-            if (activeScenario !== 'NORMAL') return;
-
-            phaseTimer -= dt;
-            totalCycleTimer = (totalCycleTimer + dt) % 28;
-
-            if (phaseTimer <= 0) {
-                sound.playBeep(750, 0.08);
-
-                if (currentPhase === 'GREEN') {
-                    currentPhase = 'YELLOW';
-                    phaseTimer = 1;
-                } else if (currentPhase === 'YELLOW') {
-                    currentPhase = 'GREEN';
-                    phaseTimer = 6;
-                    currentDirIndex = (currentDirIndex + 1) % directionsList.length;
-                    activeDirection = directionsList[currentDirIndex];
-                }
-            }
-            updateUI();
-        }
-
-        let spawnTimer = 0;
-        function handleVehicleSpawning(dt) {
-            spawnTimer += dt;
-            const interval = 3.5 / trafficSpawnRate;
-            if (spawnTimer >= interval) {
-                spawnTimer = 0;
-                const dir = directionsList[Math.floor(Math.random() * directionsList.length)];
-                if (vehicles.length < 15) {
-                    vehicles.push(new Vehicle(dir));
-                }
-            }
-        }
-
-        function updateUI() {
-            const isBlinkYellowOn = (Math.floor(Date.now() / 300) % 2 === 0);
-
-            ['N', 'E', 'S', 'W'].forEach(d => {
-                const badge = document.getElementById(`light-${d.toLowerCase()}-state`);
-                const timerLbl = document.getElementById(`timer-${d.toLowerCase()}`);
-
-                if (activeScenario === 'NORMAL') {
-                    const isGreen = (activeDirection === d && currentPhase === 'GREEN');
-                    const isYellow = (activeDirection === d && currentPhase === 'YELLOW');
-                    if (isGreen) badge.className = 'w-4 h-4 mx-auto rounded-full glow-green bg-green-500 border border-white';
-                    else if (isYellow) badge.className = 'w-4 h-4 mx-auto rounded-full glow-yellow bg-yellow-500 border border-white';
-                    else badge.className = 'w-4 h-4 mx-auto rounded-full bg-red-950 border border-red-900';
-                    
-                    timerLbl.innerText = (activeDirection === d) ? Math.max(0, Math.ceil(phaseTimer)) + 's' : 'STOP';
-
-                } else if (activeScenario === 'STOP') {
-                    badge.className = 'w-4 h-4 mx-auto rounded-full glow-red bg-red-600 border border-white';
-                    timerLbl.innerText = 'RED';
-
-                } else if (activeScenario === 'DARURAT') {
-                    badge.className = isBlinkYellowOn ? 'w-4 h-4 mx-auto rounded-full glow-yellow bg-yellow-400 border border-white' : 'w-4 h-4 mx-auto rounded-full bg-yellow-950 border border-yellow-900';
-                    timerLbl.innerText = 'WARN';
-                }
-            });
-
-            document.getElementById('stat-cycle-time').innerText = totalCycleTimer.toFixed(1) + 's';
-            document.getElementById('stat-passed').innerText = passedVehiclesCount;
-            document.getElementById('stat-active').innerText = vehicles.length;
-        }
-
-        let lastTime = performance.now();
-        function animate(now) {
-            const dt = (now - lastTime) / 1000;
-            lastTime = now;
-
-            if (!isPaused) {
-                totalTimeSeconds += dt;
-                updateTrafficLights(dt);
-                handleVehicleSpawning(dt);
-
-                ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-                drawIntersection();
-
-                for (let i = vehicles.length - 1; i >= 0; i--) {
-                    const v = vehicles[i];
-                    v.update();
-                    v.draw();
-                    if (v.isOutOfBounds()) vehicles.splice(i, 1);
-                }
-            }
-            requestAnimationFrame(animate);
-        }
-
-        // Action Buttons Event Listeners
-        document.getElementById('btn-scenario-normal').addEventListener('click', () => {
-            sound.init(); sound.playBeep(880, 0.1);
-            activeScenario = 'NORMAL';
-            document.getElementById('emergency-banner').classList.add('hidden');
-            document.getElementById('stop-banner').classList.add('hidden');
-            document.getElementById('current-mode-display').innerText = 'AUTO (28s)';
-            document.getElementById('current-mode-display').className = 'text-emerald-400 font-bold';
-            document.getElementById('sys-status').innerText = 'NORMAL (28s CYCLE)';
-            updateUI();
-        });
-
-        document.getElementById('btn-scenario-stop').addEventListener('click', () => {
-            sound.init(); sound.playBeep(400, 0.2);
-            activeScenario = 'STOP';
-            document.getElementById('emergency-banner').classList.add('hidden');
-            document.getElementById('stop-banner').classList.remove('hidden');
-            document.getElementById('current-mode-display').innerText = 'STOP (ALL RED)';
-            document.getElementById('current-mode-display').className = 'text-red-400 font-bold';
-            document.getElementById('sys-status').innerText = 'ALL RED LOCKED';
-            updateUI();
-        });
-
-        document.getElementById('btn-scenario-emergency').addEventListener('click', () => {
-            sound.init(); sound.playSiren();
-            activeScenario = 'DARURAT';
-            document.getElementById('stop-banner').classList.add('hidden');
-            document.getElementById('emergency-banner').classList.remove('hidden');
-            document.getElementById('current-mode-display').innerText = 'DARURAT (KUNING BERKEDIP)';
-            document.getElementById('current-mode-display').className = 'text-amber-400 font-bold';
-            document.getElementById('sys-status').innerText = 'EMERGENCY WARNING';
-            updateUI();
-        });
-
-        document.getElementById('btn-takeoff-heli').addEventListener('click', () => {
-            sound.init();
-            const btnText = document.getElementById('heli-btn-text');
-            if (heliState === 'LANDED') {
-                heliState = 'TAKING_OFF';
-                btnText.innerText = 'MENDARATKAN HELI';
-            } else if (heliState === 'FLYING' || heliState === 'TAKING_OFF') {
-                heliState = 'LANDING';
-                btnText.innerText = 'PROSES MENDARAT...';
-            }
-        });
-
-        document.getElementById('btn-toggle-pause').addEventListener('click', () => {
-            sound.init();
-            isPaused = !isPaused;
-            document.getElementById('pause-text').innerText = isPaused ? 'RESUME SIMULASI' : 'PAUSE SIMULASI';
-            document.getElementById('pause-icon').className = isPaused ? 'fa-solid fa-play' : 'fa-solid fa-pause';
-        });
-
-        // Spawners
-        document.getElementById('spawn-tank').addEventListener('click', () => { sound.init(); vehicles.push(new Vehicle(directionsList[Math.floor(Math.random()*4)], 'TANK')); });
-        document.getElementById('spawn-nuke').addEventListener('click', () => { sound.init(); vehicles.push(new Vehicle(directionsList[Math.floor(Math.random()*4)], 'NUKE')); });
-        document.getElementById('spawn-truck').addEventListener('click', () => { sound.init(); vehicles.push(new Vehicle(directionsList[Math.floor(Math.random()*4)], 'TRUK')); });
-        document.getElementById('spawn-humvee').addEventListener('click', () => { sound.init(); vehicles.push(new Vehicle(directionsList[Math.floor(Math.random()*4)], 'HUMVEE')); });
-
-        document.getElementById('sound-toggle').addEventListener('click', () => {
-            sound.init(); sound.enabled = !sound.enabled;
-            document.getElementById('sound-text').innerText = sound.enabled ? 'AUDIO ON' : 'AUDIO OFF';
-        });
-
-        document.getElementById('btn-toggle-searchlight').addEventListener('click', () => {
-            isSearchlightOn = !isSearchlightOn;
-            document.getElementById('searchlight-text').innerText = isSearchlightOn ? 'MENARA: ON' : 'MENARA: OFF';
-        });
-
-        window.onload = () => {
-            vehicles.push(new Vehicle('N'));
-            vehicles.push(new Vehicle('E'));
-            vehicles.push(new Vehicle('S'));
-            vehicles.push(new Vehicle('W'));
-            requestAnimationFrame(animate);
-        };
-    </script>
+      </div>
+      <div style="font-size:11px;color:var(--mut);text-align:center;"><span id="cyc"></span></div>
+    </div>
+
+    <!-- Opsi Aturan Belok Kiri Jalan Terus -->
+    <div class="ctrl-box">
+      <div class="ctrl-title">Pengaturan Rambu Belok Kanan</div>
+      <div class="form-group">
+        <label for="cfg-left-turn">Aturan Belok Kanan Persimpangan</label>
+        <select id="cfg-left-turn">
+          <option value="ALWAYS" selected>Ada Rambu "Belok Kanan Jalan Terus" (Boleh Berbelok Langsung)</option>
+          <option value="LIGHT">Ikuti Lampu Isyarat (Wajib Berhenti Saat Lampu Merah)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Simulasi Kepadatan & Skenario Tabrakan -->
+    <div class="ctrl-box">
+      <div class="ctrl-title">Simulasi Kepadatan & Penerobos Merah</div>
+      <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="form-group">
+          <label for="cfg-density">Kepadatan Lalu Lintas</label>
+          <select id="cfg-density" onchange="updateDensity()">
+            <option value="LOW">Rendah (Sepi)</option>
+            <option value="MID" selected>Sedang (Normal)</option>
+            <option value="HIGH">Tinggi (Macet)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Kecelakaan Tabrakan</label>
+          <button id="bClearCrash" class="btn-action-clear" onclick="clearCrashedVehicles()">Bersihkan Bangkai (0)</button>
+        </div>
+      </div>
+      <button id="bTriggerViolator" class="btn-action-danger" onclick="triggerSingleViolator()">Kirim 1 Mobil Penerobos Merah</button>
+    </div>
+
+    <div class="io" id="io"></div>
+    <div id="itl">Interlock: aman (1 Hijau saja)</div>
+  </section>
+</main>
+<script>
+/* ===== PLC LOGIC CONFIG & EMULATOR ===== */
+let durConfig = { g: 20, y: 3, ar: 1 };
+
+function updatePLCConfig() {
+  durConfig.g = parseInt($('cfg-g').value) || 20;
+  durConfig.y = parseInt($('cfg-y').value) || 3;
+  durConfig.ar = parseInt($('cfg-ar').value) || 1;
+  $('cyc').textContent = `Satu siklus penuh 4 arah = ${4 * (durConfig.g + durConfig.y + durConfig.ar)} detik`;
+}
+
+function getPhaseDur(faseIdx) {
+  const mod = faseIdx % 3;
+  if (mod === 0) return durConfig.g;
+  if (mod === 1) return durConfig.y;
+  return durConfig.ar;
+}
+
+// Matriks Output 4 Fase (N, E, S, W)
+const OUTS_4PHASE = [
+  [0,0,1,  1,0,0,  1,0,0,  1,0,0], // 0: N_G
+  [0,1,0,  1,0,0,  1,0,0,  1,0,0], // 1: N_Y
+  [1,0,0,  1,0,0,  1,0,0,  1,0,0], // 2: AR
+  [1,0,0,  0,0,1,  1,0,0,  1,0,0], // 3: E_G
+  [1,0,0,  0,1,0,  1,0,0,  1,0,0], // 4: E_Y
+  [1,0,0,  1,0,0,  1,0,0,  1,0,0], // 5: AR
+  [1,0,0,  1,0,0,  0,0,1,  1,0,0], // 6: S_G
+  [1,0,0,  1,0,0,  0,1,0,  1,0,0], // 7: S_Y
+  [1,0,0,  1,0,0,  1,0,0,  1,0,0], // 8: AR
+  [1,0,0,  1,0,0,  1,0,0,  0,0,1], // 9: W_G
+  [1,0,0,  1,0,0,  1,0,0,  0,1,0], // 10: W_Y
+  [1,0,0,  1,0,0,  1,0,0,  1,0,0]  // 11: AR
+];
+
+const local = {
+  fase: 0, et: 0, run: true, auto: true, emg: false, 
+  out: OUTS_4PHASE[0].slice(), itl: false, step: false
+};
+
+function plcScan(dt) {
+  const p = local, blink = Math.floor(performance.now() / 500) % 2;
+  p.itl = false;
+
+  if (p.emg) {
+    p.out = [0,blink,0,  0,blink,0,  0,blink,0,  0,blink,0];
+    p.fase = 2; p.et = 0; return;
+  }
+  if (!p.run) {
+    p.out = [1,0,0,  1,0,0,  1,0,0,  1,0,0];
+    p.fase = 2; p.et = 0; return;
+  }
+  if (p.auto) p.et += dt;
+  if (p.et >= getPhaseDur(p.fase) || (!p.auto && p.step)) {
+    p.fase = (p.fase + 1) % 12;
+    p.et = 0;
+  }
+  p.step = false;
+  p.out = OUTS_4PHASE[p.fase].slice();
+
+  const greenCount = p.out[2] + p.out[5] + p.out[8] + p.out[11];
+  if (greenCount > 1) {
+    p.out = [1,0,0, 1,0,0, 1,0,0, 1,0,0];
+    p.itl = true;
+  }
+}
+
+function localCmd(i, v) {
+  if (i == 0) { local.run = true; local.emg = false; }
+  if (i == 1) { local.run = false; }
+  if (i == 2) local.auto = !!v;
+  if (i == 3) local.emg = !!v;
+  if (i == 4) local.step = true;
+}
+
+const $ = id => document.getElementById(id);
+$('bS').onclick = () => localCmd(0, 1);
+$('bT').onclick = () => localCmd(1, 1);
+$('bA').onclick = () => localCmd(2, !local.auto);
+$('bD').onclick = () => localCmd(3, !local.emg);
+$('bN').onclick = () => localCmd(4, 1);
+
+function cur() {
+  return {
+    fase: local.fase, 
+    rem: Math.max(0, getPhaseDur(local.fase) - local.et), 
+    out: local.out, 
+    run: local.run, 
+    auto: local.auto, 
+    emg: local.emg, 
+    itl: local.itl
+  };
+}
+
+/* ===== PANEL HMI INTERACTION ===== */
+const COILS = ['Coil 0 · START', 'Coil 1 · STOP', 'Coil 2 · MODE_AUTO', 'Coil 3 · DARURAT'];
+const INS = ['N_M', 'N_K', 'N_H', 'E_M', 'E_K', 'E_H', 'S_M', 'S_K', 'S_H', 'W_M', 'W_K', 'W_H'];
+
+$('io').innerHTML = '<h3>Perintah HMI → PLC</h3><h3>Status Output PLC (4 Arah)</h3>' +
+ '<div style="flex-direction:column;align-items:stretch;gap:4px">' + COILS.map((t, i) => `<div><i id="c${i}"></i>${t}</div>`).join('') + '</div>' +
+ '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">' + INS.map((t, i) => `<div><i id="n${i}"></i>${t}</div>`).join('') + '</div>';
+
+const NAMA_FASE = [
+  'Utara Hijau', 'Utara Kuning', 'All Red (Transisi)',
+  'Timur Hijau', 'Timur Kuning', 'All Red (Transisi)',
+  'Selatan Hijau', 'Selatan Kuning', 'All Red (Transisi)',
+  'Barat Hijau', 'Barat Kuning', 'All Red (Transisi)'
+];
+
+function hmi(s) {
+  const o = s.out;
+  [['sig-n', [o[0], o[1], o[2]]],
+   ['sig-e', [o[3], o[4], o[5]]],
+   ['sig-s', [o[6], o[7], o[8]]],
+   ['sig-w', [o[9], o[10], o[11]]]].forEach(([id, v]) => {
+     [...$(id).children].forEach((el, i) => el.classList.toggle('on', !!v[i]));
+   });
+
+  [s.run, !s.run, s.auto, s.emg].forEach((v, i) => $('c' + i).classList.toggle('on', !!v));
+  o.forEach((v, i) => $('n' + i).classList.toggle('on', !!v));
+
+  $('bA').classList.toggle('act', s.auto); 
+  $('bD').classList.toggle('act', s.emg);
+  $('bN').disabled = s.auto || !s.run || s.emg;
+
+  $('fase').textContent = s.emg ? 'DARURAT • Kuning Berkedip 4 Arah' : !s.run ? 'STOP • Semua Lampu Merah' :
+    `Fase ${s.fase + 1} • ${NAMA_FASE[s.fase]} • ${String(Math.ceil(s.rem)).padStart(2, '0')} s`;
+
+  const t = $('itl');
+  t.className = s.itl ? 'bad' : '';
+  t.textContent = s.itl ? 'Interlock AKTIF: Lebih dari 1 Hijau terdeteksi!' : 'Interlock: Aman — 1 Lampu Hijau Aktif';
+
+  const crashedCount = cars.filter(c => c.crashed).length;
+  $('bClearCrash').textContent = `Bersihkan Bangkai (${crashedCount})`;
+}
+
+/* ===== GEOMETRI PERSIMPANGAN (2 lajur per arah, lalu lintas jalur kanan sesuai gambar acuan) ===== */
+const cv = $('cv'), c = cv.getContext('2d'), W = 1000, H = 640, cx = 500, cy = 320;
+const HALF = 84, STOP = 112, LN = [21, 63];            // setengah lebar jalan, jarak garis stop, pusat lajur dalam/luar
+const DIR = [[0,1],[0,-1],[1,0],[-1,0]];                // 0 selatan(dari utara), 1 utara(dari selatan), 2 timur(dari barat), 3 barat(dari timur)
+const laneC = (d, k) => d == 0 ? cx - LN[k] : d == 1 ? cx + LN[k] : d == 2 ? cy + LN[k] : cy - LN[k]; // k=0 lajur dalam, 1 lajur luar
+const DEST = { RIGHT: [3,2,0,1], LEFT: [2,3,1,0] };     // arah tujuan menurut arah asal
+
+const B = [
+  [24,24,150,96,'#d8b79a'],[196,24,150,172,'#9db7d3'],[24,142,120,70,'#e3c88c'],
+  [620,24,140,110,'#a9c9a8'],[620,150,120,62,'#b6a7d6'],[790,24,170,170,'#e09a92'],
+  [24,430,130,190,'#9fc5c5'],[176,440,150,100,'#e6b99a'],[196,560,130,64,'#a9b4cc'],
+  [630,430,160,100,'#d6cf9a'],[820,420,140,200,'#9fb0cf'],[630,550,170,70,'#dca098']
+];
+const TREES = [[186,214],[366,196],[154,226],[610,226],[780,205],[400,222],[170,420],[360,424],[345,560],[610,424],[800,545],[610,610]];
+
+// Panah lajur di aspal. Bentuk digambar menghadap atas (-y), lalu diputar searah kendaraan datang.
+function roadArrow(x, y, ang, type) {
+  c.save(); c.translate(x, y); c.rotate(ang);
+  c.fillStyle = c.strokeStyle = '#fff'; c.lineWidth = 3;
+  const head = (px, py, dx, dy) => { // segitiga kepala panah searah (dx,dy)
+    c.beginPath(); c.moveTo(px + dx * 7, py + dy * 7);
+    c.lineTo(px - dx * 1 - dy * 5, py - dy * 1 + dx * 5); c.lineTo(px - dx * 1 + dy * 5, py - dy * 1 - dx * 5); c.closePath(); c.fill();
+  };
+  c.beginPath(); c.moveTo(0, 18);
+  if (type === 'R') {               // lajur luar: hanya belok kanan
+    c.lineTo(0, -2); c.quadraticCurveTo(0, -12, 10, -12); c.stroke(); head(10, -12, 1, 0);
+  } else {                          // lajur dalam: lurus + belok kiri
+    c.lineTo(0, -14); c.stroke(); head(0, -14, 0, -1);
+    c.beginPath(); c.moveTo(0, 2); c.quadraticCurveTo(0, -8, -10, -8); c.stroke(); head(-10, -8, -1, 0);
+  }
+  c.restore();
+}
+
+function drawScene() {
+  c.fillStyle = '#cfdac6'; c.fillRect(0, 0, W, H);
+  c.fillStyle = '#3b4049';
+  c.fillRect(cx - HALF, 0, 2 * HALF, H); c.fillRect(0, cy - HALF, W, 2 * HALF);
+
+  const line = (a, col, w, dash) => { c.strokeStyle = col; c.lineWidth = w; c.setLineDash(dash);
+    a.forEach(l => { c.beginPath(); c.moveTo(l[0], l[1]); c.lineTo(l[2], l[3]); c.stroke(); }); c.setLineDash([]); };
+  // Garis median kuning (berhenti di garis stop)
+  line([[cx,0,cx,cy-STOP],[cx,cy+STOP,cx,H],[0,cy,cx-STOP,cy],[cx+STOP,cy,W,cy]], '#e0c84f', 3, []);
+  // Pemisah lajur putih putus-putus
+  line([[cx-42,0,cx-42,cy-STOP],[cx+42,0,cx+42,cy-STOP],[cx-42,cy+STOP,cx-42,H],[cx+42,cy+STOP,cx+42,H],
+        [0,cy-42,cx-STOP,cy-42],[0,cy+42,cx-STOP,cy+42],[cx+STOP,cy-42,W,cy-42],[cx+STOP,cy+42,W,cy+42]], '#f2f2f2', 2, [14,14]);
+
+  // Zebra cross 4 sisi
+  c.fillStyle = '#f2f2f2';
+  for (let i = 0; i < 10; i++) {
+    const o = -80 + i * 16;
+    c.fillRect(cx + o, cy - 106, 8, 16); c.fillRect(cx + o, cy + 90, 8, 16);
+    c.fillRect(cx - 106, cy + o, 16, 8); c.fillRect(cx + 90, cy + o, 16, 8);
+  }
+  // Garis stop (hanya di sisi lajur kendaraan yang datang)
+  c.fillRect(cx - HALF, cy - STOP - 4, HALF, 4);   // utara  -> selatan
+  c.fillRect(cx, cy + STOP, HALF, 4);              // selatan -> utara
+  c.fillRect(cx - STOP - 4, cy, 4, HALF);          // barat  -> timur
+  c.fillRect(cx + STOP, cy - HALF, 4, HALF);       // timur  -> barat
+
+  // Panah lajur: dalam = lurus + kiri, luar = kanan
+  [[0, cy - 175, Math.PI], [1, cy + 175, 0], [2, cx - 175, Math.PI / 2], [3, cx + 175, -Math.PI / 2]].forEach(([d, p, ang]) => {
+    [0, 1].forEach(k => d < 2 ? roadArrow(laneC(d, k), p, ang, k ? 'R' : 'SL') : roadArrow(p, laneC(d, k), ang, k ? 'R' : 'SL'));
+  });
+
+  B.forEach(([x, y, w, h, col]) => {
+    c.fillStyle = 'rgba(0,0,0,.16)'; c.fillRect(x + 8, y + 8, w, h);
+    c.fillStyle = col; c.fillRect(x, y, w, h);
+    c.fillStyle = 'rgba(255,255,255,.28)'; c.fillRect(x + 6, y + 6, w - 12, h - 12);
+    c.fillStyle = 'rgba(60,70,85,.55)';
+    for (let i = x + 14; i < x + w - 20; i += 22) for (let j = y + 14; j < y + h - 20; j += 20) c.fillRect(i, j, 10, 9);
+  });
+  TREES.forEach(([x, y]) => {
+    c.fillStyle = '#4f8a55'; c.beginPath(); c.arc(x, y, 13, 0, 7); c.fill();
+    c.fillStyle = '#69a56c'; c.beginPath(); c.arc(x - 3, y - 3, 7, 0, 7); c.fill();
+  });
+}
+
+/* Lampu isyarat di sisi kanan pengemudi + rambu "Belok kanan jalan terus" */
+function drawTrafficLights(o) {
+  const rule = $('cfg-left-turn').value;
+  [{ x: cx - 104, y: cy - 140, i: 0, sx: -1, n: 'UTARA' }, { x: cx + 104, y: cy + 140, i: 6, sx: 1, n: 'SELATAN' },
+   { x: cx - 140, y: cy + 104, i: 9, sx: -1, n: 'BARAT' }, { x: cx + 140, y: cy - 104, i: 3, sx: 1, n: 'TIMUR' }].forEach(l => {
+    if (rule === 'ALWAYS') {
+      c.fillStyle = '#0b6b3a'; c.fillRect(l.x + l.sx * 70 - 40, l.y - 13, 80, 26);
+      c.strokeStyle = '#fff'; c.lineWidth = 2; c.strokeRect(l.x + l.sx * 70 - 40, l.y - 13, 80, 26);
+      c.fillStyle = '#fff'; c.font = 'bold 9px "Segoe UI", sans-serif'; c.textAlign = 'center';
+      c.fillText('BELOK KANAN', l.x + l.sx * 70, l.y - 2); c.fillText('JALAN TERUS', l.x + l.sx * 70, l.y + 9);
+    }
+    c.fillStyle = '#1a202c'; c.fillRect(l.x - 26, l.y - 44, 52, 14);
+    c.fillStyle = '#fff'; c.font = 'bold 10px "Segoe UI", sans-serif'; c.textAlign = 'center'; c.fillText(l.n, l.x, l.y - 33);
+    c.fillStyle = '#232a33'; c.fillRect(l.x - 10, l.y - 25, 20, 50);
+    [[o[l.i], '#ff4b45', -16], [o[l.i + 1], '#ffc83a', 0], [o[l.i + 2], '#4ee07a', 16]].forEach(([on, col, dy]) => {
+      c.fillStyle = on ? col : '#3a404a'; c.beginPath(); c.arc(l.x, l.y + dy, 5, 0, 7); c.fill();
+      if (on) { c.shadowColor = col; c.shadowBlur = 10; c.fill(); c.shadowBlur = 0; }
+    });
+  });
+}
+
+/* ===== KENDARAAN ===== */
+const cars = [], crashes = [];
+const COL = ['#d9453d','#2f7fd1','#f0c030','#ececec','#2e9d6a','#7a4fc2','#e8803a'];
+let spawnIntervalRange = { min: 1.5, max: 3.0 };
+function updateDensity() {
+  const m = $('cfg-density').value;
+  spawnIntervalRange = m === 'LOW' ? { min: 3, max: 5 } : m === 'HIGH' ? { min: .5, max: 1.2 } : { min: 1.5, max: 3 };
+}
+let spawnT = [0, 0, 0, 0];
+
+function spawn(d, viol = false) {
+  const r = Math.random();
+  let it = r < .33 ? 'RIGHT' : r < .55 ? 'LEFT' : 'STRAIGHT';
+  if (viol) it = 'STRAIGHT';
+  const lane = it === 'RIGHT' ? 1 : 0, lc = laneC(d, lane);   // luar = belok kanan; dalam = lurus / belok kiri
+  const p = [[lc, -40], [lc, H + 40], [-40, lc], [W + 40, lc]][d];
+  if (cars.some(o => o.origin == d && o.lane == lane && !o.turned && !o.path && Math.hypot(o.x - p[0], o.y - p[1]) < 65)) return;
+  cars.push({ d, origin: d, lane, x: p[0], y: p[1], angle: Math.atan2(DIR[d][1], DIR[d][0]),
+    v: viol ? 120 : 80, col: viol ? '#ff0000' : COL[Math.random() * COL.length | 0], bus: !viol && Math.random() < .1,
+    isViolator: viol, crashed: false, turnIntent: it, turned: false, path: null });
+}
+
+// Lintasan belok: kurva Bezier dari lajur asal ke lajur tujuan (kanan -> lajur luar, kiri -> lajur dalam)
+function makePath(a) {
+  const right = a.turnIntent === 'RIGHT', nd = (right ? DEST.RIGHT : DEST.LEFT)[a.d];
+  const lc = laneC(a.d, a.lane), dc = laneC(nd, right ? 1 : 0);
+  let p0, p1, p2;
+  if (a.d < 2) { p0 = [lc, a.d == 0 ? cy - HALF : cy + HALF]; p1 = [lc, dc]; p2 = nd == 2 ? [cx + HALF, dc] : [cx - HALF, dc]; }
+  else { p0 = [a.d == 2 ? cx - HALF : cx + HALF, lc]; p1 = [dc, lc]; p2 = nd == 0 ? [dc, cy + HALF] : [dc, cy - HALF]; }
+  let len = 0, px = p0[0], py = p0[1];
+  for (let i = 1; i <= 20; i++) {
+    const t = i / 20, u = 1 - t, x = u*u*p0[0] + 2*u*t*p1[0] + t*t*p2[0], y = u*u*p0[1] + 2*u*t*p1[1] + t*t*p2[1];
+    len += Math.hypot(x - px, y - py); px = x; py = y;
+  }
+  a.path = { p0, p1, p2, len, s: 0, nd };
+}
+
+function triggerSingleViolator() {
+  const o = cur().out, red = [];
+  if (o[0]) red.push(0); if (o[6]) red.push(1); if (o[9]) red.push(2); if (o[3]) red.push(3);
+  if (red.length) spawn(red[Math.random() * red.length | 0], true);
+}
+function clearCrashedVehicles() {
+  for (let i = cars.length - 1; i >= 0; i--) if (cars[i].crashed) cars.splice(i, 1);
+  crashes.length = 0;
+}
+function sigState(d, o, emg) {
+  if (emg) return 'F';
+  const m = [[o[0],o[1],o[2]],[o[6],o[7],o[8]],[o[9],o[10],o[11]],[o[3],o[4],o[5]]][d];
+  return m[2] ? 'G' : m[1] ? 'Y' : m[0] ? 'R' : 'F';
+}
+const inBox = (b, m = 0) => Math.abs(b.x - cx) < HALF + m && Math.abs(b.y - cy) < HALF + m;
+
+function moveCars(dt, s) {
+  const o = s.out, rule = $('cfg-left-turn').value;
+  spawnT = spawnT.map((t, d) => {
+    t -= dt;
+    if (t <= 0) { spawn(d); return spawnIntervalRange.min + Math.random() * (spawnIntervalRange.max - spawnIntervalRange.min); }
+    return t;
+  });
+
+  cars.forEach(a => {
+    if (a.crashed) return;
+    const L = a.bus ? 44 : 32, [dx, dy] = DIR[a.d];
+    let tv = a.turnIntent === 'RIGHT' ? 75 : a.turnIntent === 'LEFT' ? 85 : 100;
+
+    if (!a.turned && !a.path) {
+      const fx = a.x + dx * L / 2, fy = a.y + dy * L / 2;
+      const dist = a.d == 0 ? cy - STOP - fy : a.d == 1 ? fy - (cy + STOP) : a.d == 2 ? cx - STOP - fx : fx - (cx + STOP);
+      const st = sigState(a.d, o, s.emg);
+      const free = rule === 'ALWAYS' && a.turnIntent === 'RIGHT';       // rambu belok kanan jalan terus
+      if (a.isViolator) tv = 135;
+      else if (st == 'F') tv *= .55;
+      else if (!free) {
+        if (st == 'R' || (st == 'Y' && dist > 20)) {
+          if (dist > -5 && dist <= 4) tv = 0; else if (dist > 4 && dist < 130) tv = Math.min(tv, (dist - 4) * 1.5);
+        } else if (dist > -5 && dist < 10 && cars.some(b => b !== a && !b.crashed && b.origin !== a.origin && inBox(b))) tv = 0; // tunggu simpang kosong
+      }
+      if (a.turnIntent !== 'STRAIGHT' && (a.d == 0 ? a.y >= cy - HALF : a.d == 1 ? a.y <= cy + HALF : a.d == 2 ? a.x >= cx - HALF : a.x <= cx + HALF)) makePath(a);
+    }
+    if (a.path) tv = Math.min(tv, 70);
+
+    // Mengikuti kendaraan di depan (searah, lajur sama, termasuk bangkai)
+    const ca = Math.cos(a.angle), sa = Math.sin(a.angle);
+    cars.forEach(b => {
+      if (b === a) return;
+      const rx = b.x - a.x, ry = b.y - a.y, f = rx * ca + ry * sa, l = Math.abs(-rx * sa + ry * ca);
+      if (f > 0 && l < 14 && Math.cos(b.angle - a.angle) > .8) {
+        const Lb = (L + (b.bus ? 44 : 32)) / 2;
+        if (f < Lb + 60) tv = Math.min(tv, Math.max(0, (f - Lb - 6) * 3));
+      }
+    });
+
+    a.v += Math.max(-300 * dt, Math.min(120 * dt, tv - a.v));
+    if (a.path) {
+      const p = a.path; p.s += a.v * dt;
+      const t = Math.min(1, p.s / p.len), u = 1 - t;
+      a.x = u*u*p.p0[0] + 2*u*t*p.p1[0] + t*t*p.p2[0];
+      a.y = u*u*p.p0[1] + 2*u*t*p.p1[1] + t*t*p.p2[1];
+      a.angle = Math.atan2(2*u*(p.p1[1]-p.p0[1]) + 2*t*(p.p2[1]-p.p1[1]), 2*u*(p.p1[0]-p.p0[0]) + 2*t*(p.p2[0]-p.p1[0]));
+      if (t >= 1) { a.d = p.nd; a.path = null; a.turned = true; a.angle = Math.atan2(DIR[a.d][1], DIR[a.d][0]); }
+    } else { a.x += ca * a.v * dt; a.y += sa * a.v * dt; }
+  });
+
+  // Tabrakan di dalam simpang (kendaraan dari arah asal berbeda)
+  for (let i = 0; i < cars.length; i++) for (let j = i + 1; j < cars.length; j++) {
+    const c1 = cars[i], c2 = cars[j];
+    if (c1.origin !== c2.origin && !c1.crashed && !c2.crashed && inBox(c1, 8) && inBox(c2, 8) && Math.hypot(c1.x - c2.x, c1.y - c2.y) < 26) {
+      c1.crashed = c2.crashed = true; c1.v = c2.v = 0;
+      crashes.push({ x: (c1.x + c2.x) / 2, y: (c1.y + c2.y) / 2, life: 2, maxLife: 2 });
+    }
+  }
+  for (let i = cars.length - 1; i >= 0; i--) {
+    const a = cars[i];
+    if (!a.crashed && (a.x < -80 || a.x > W + 80 || a.y < -80 || a.y > H + 80)) cars.splice(i, 1);
+  }
+}
+
+function drawCars() {
+  cars.forEach(a => {
+    const L = a.bus ? 44 : 32;
+    c.save(); c.translate(a.x, a.y); c.rotate(a.angle);
+    c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(-L / 2 + 2, -8, L, 18);
+    c.fillStyle = a.crashed ? '#333' : a.isViolator ? '#ff0000' : a.bus ? '#e9e1c9' : a.col;
+    c.beginPath(); c.roundRect(-L / 2, -9, L, 18, 4); c.fill();
+    c.fillStyle = 'rgba(30,45,60,.75)'; c.fillRect(L / 2 - 12, -7, 6, 14); c.fillRect(-L / 2 + 4, -7, 5, 14);
+    if (!a.crashed && a.turnIntent !== 'STRAIGHT' && !a.turned && Math.floor(performance.now() / 250) % 2 === 0) {
+      const sy = a.turnIntent === 'LEFT' ? -9 : 9;   // sein kiri = sisi -y, kanan = sisi +y
+      c.fillStyle = '#ffaa00'; c.shadowColor = '#ffaa00'; c.shadowBlur = 6;
+      c.beginPath(); c.arc(L / 2 - 3, sy, 2.5, 0, 7); c.fill(); c.beginPath(); c.arc(-L / 2 + 3, sy, 2.5, 0, 7); c.fill();
+      c.shadowBlur = 0;
+    }
+    if (a.isViolator && !a.crashed) { c.fillStyle = '#ffff00'; c.beginPath(); c.arc(0, 0, 5, 0, 7); c.fill(); }
+    c.restore();
+  });
+  for (let i = crashes.length - 1; i >= 0; i--) {
+    const cr = crashes[i], al = cr.life / cr.maxLife;
+    c.save(); c.translate(cr.x, cr.y);
+    c.fillStyle = `rgba(255,75,69,${al})`; c.beginPath(); c.arc(0, 0, 30 * (2 - al), 0, 7); c.fill();
+    c.fillStyle = `rgba(255,200,58,${al})`; c.beginPath(); c.arc(0, 0, 18 * (2 - al), 0, 7); c.fill();
+    c.fillStyle = `rgba(255,255,255,${al})`; c.font = 'bold 16px "Segoe UI", sans-serif'; c.textAlign = 'center'; c.fillText('CRASH!', 0, -30);
+    c.restore();
+    cr.life -= .015; if (cr.life <= 0) crashes.splice(i, 1);
+  }
+}
+
+/* ===== LOOP UTAMA ===== */
+let last = performance.now(), acc = 0;
+function frame(t) {
+  const dt = Math.min(.1, (t - last) / 1000); last = t;
+  acc += dt; while (acc >= .1) { plcScan(.1); acc -= .1; }
+  const s = cur();
+  hmi(s); moveCars(dt, s);
+  drawScene(); drawCars(); drawTrafficLights(s.out);
+  requestAnimationFrame(frame);
+}
+updatePLCConfig();
+requestAnimationFrame(frame);
+</script>
 </body>
 </html>
